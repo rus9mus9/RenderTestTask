@@ -6,6 +6,6 @@ import renderproject.model.RenderingStatus;
 public interface ClientService
 {
     Client createNewUser(Client client);
-    Client getUser(int userId);
-    Client getUserByEmail(String email);
+    Client getClient(int userId);
+    Client getClientByEmailPassword(String email, String password);
 }

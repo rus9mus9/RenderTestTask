@@ -1,15 +1,12 @@
 package renderproject.service.client;
 
-import renderproject.AuthorizedClient;
+import org.springframework.stereotype.Service;
 import renderproject.model.Client;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
 import renderproject.repository.client.ClientRepo;
 
-@Service("clientService")
-public class ClientServiceImpl implements ClientService, UserDetailsService
+@Service
+public class ClientServiceImpl implements ClientService
 {
     private final ClientRepo clientRepo;
 
@@ -25,19 +22,14 @@ public class ClientServiceImpl implements ClientService, UserDetailsService
         return clientRepo.createNewUser(client);
     }
 
-    public Client getUser(int userId)
+    public Client getClient(int userId)
     {
         return clientRepo.getUser(userId);
     }
 
-    public Client getUserByEmail(String email)
+    public Client getClientByEmailPassword(String email, String password)
     {
-        return clientRepo.getUserByEmailPassword(email);
+        return clientRepo.getClientByEmailPassword(email, password);
     }
 
-    public AuthorizedClient loadUserByUsername(String email) throws UsernameNotFoundException
-    {
-       Client client = clientRepo.getUserByEmailPassword(email.toLowerCase());
-       return client == null ? null : new AuthorizedClient(client);
-    }
 }

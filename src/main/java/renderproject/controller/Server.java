@@ -1,19 +1,17 @@
 package renderproject.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.GenericXmlApplicationContext;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import renderproject.AuthorizedClient;
 import renderproject.model.Client;
 import renderproject.service.client.ClientService;
 import renderproject.service.task.TaskService;
 
+import javax.persistence.NoResultException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.*;
 
 @Component
 public class Server
@@ -28,6 +26,9 @@ public class Server
     @Autowired
     private TaskService taskService;
 
+    private static final BufferedReader inputStream = new BufferedReader(new InputStreamReader(System.in));
+
+    private static final String emailRegex = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])";
 
     static
     {
@@ -44,38 +45,85 @@ public class Server
         commandMap.put(2, (HashMap<Integer, String>) userCommands);
     }
 
+    private void showInitialCommands()
+    {
+        for(Map.Entry entry: commandMap.get(1).entrySet())
+        {
+            System.out.println(entry.getKey() + " - " + entry.getValue());
+        }
+    }
+
+    private void showLoggedUserCommands()
+    {
+        for (Map.Entry entry : commandMap.get(2).entrySet())
+        {
+            System.out.println(entry.getKey() + " - " + entry.getValue());
+        }
+    }
+
     private void run()
     {
 
         try
         {
-            boolean isMainMenu = true;
-            BufferedReader inputStream = new BufferedReader(new InputStreamReader(System.in));
+           // boolean isMainMenu = true;
+            //BufferedReader inputStream = new BufferedReader(new InputStreamReader(System.in));
             //Console console = System.console();
-            System.out.println("Привет :) Добро пожаловать, выбери дальнейшее действие:");
-            for(Map.Entry entry: commandMap.get(1).entrySet())
+            System.out.println("Добро пожаловать, выбери дальнейшее действие:");
+
+            ServerSocket s1 = new ServerSocket(5555);
+            Socket ss = s1.accept();
+            Scanner sc = new Scanner(ss.getInputStream());
+            while(true)
             {
-                System.out.println(entry.getKey() + " - " + entry.getValue());
-            }
+            showInitialCommands();
 
             String userInput = inputStream.readLine();
             int initialCode = Integer.parseInt(userInput);
 
             if(initialCode == 1)
             {
-                System.out.println("Введите адрес электронной почты:");
-                String userEmail = inputStream.readLine();
-                System.out.println("Введите пароль");
-                String userPassword = inputStream.readLine();
-                /*@AuthenticationPrincipal*/ AuthorizedClient authorizedClient = new AuthorizedClient(new );
-                // = SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(userEmail, userPassword));
-                authorizedClient.getClient();
-                //AuthorizedClient client = clientService.getUserByEmailPassword(userEmail);
-                //SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(userEmail, userPassword));
-            }
+                Client loggedClient = tryLogin();
+
+                if(loggedClient != null)
+                {
+                    System.out.println("Привет, " + loggedClient.getEmail() + "! Выбери дальнейшее действие:");
+
+                    showLoggedUserCommands();
+                }
+                /*else
+                    {
+                        continue;
+                    }*/
+                /*userInput = inputStream.readLine();
+
+                if(Integer.parseInt(userInput) == 1)
+                {
+                    taskService.createTask(new Task(), client.getId());
+                    System.out.println("Задача успешно создана!");
+                }
+
+                else if(Integer.parseInt(userInput) == 2)
+                {
+                    taskService.getTasksForUser(client.getId());
+                }*/
+
+                }
+
             else if(initialCode == 2)
             {
-
+               System.out.println("Регистрация нового пользователя");
+               List<String> newUserCredentials =  proposeUserInputCredentials();
+               System.out.println("Подтвердите пароль");
+               String verifyPassword = inputStream.readLine();
+               if(!newUserCredentials.get(1).equals(verifyPassword))
+               {
+                   System.out.println("Введенные пароли не совпадают.");
+               }
+               else
+                   {
+                       clientService.createNewUser(new Client(newUserCredentials.get(0), newUserCredentials.get(1)));
+                   }
             }
             else if(initialCode == 3)
             {
@@ -84,10 +132,7 @@ public class Server
                 System.exit(0);
             }
 
-            while (Integer.parseInt(userInput)!= 3 && isMainMenu)
-            {
-
-            }
+        }
         }
         catch (Exception e)
         {
@@ -95,17 +140,41 @@ public class Server
         }
     }
 
+    private List<String> proposeUserInputCredentials() throws Exception
+    {
+        List<String> userCredentials = new ArrayList<>();
+        System.out.println("Введите адрес электронной почты:");
+        String userEmail = inputStream.readLine();
+        while(!userEmail.matches(emailRegex))
+        {
+            System.out.println("Некорректный email. Попробуйте еще раз.");
+            userEmail = inputStream.readLine();
+        }
+        System.out.println("Введите пароль");
+        String userPassword = inputStream.readLine();
+        userCredentials.add(userEmail);
+        userCredentials.add(userPassword);
+        return userCredentials;
+    }
+
+    private Client tryLogin() throws Exception
+    {
+        List<String> credentials = proposeUserInputCredentials();
+        Client client = null;
+        try
+        {
+            client = clientService.getClientByEmailPassword(credentials.get(0), credentials.get(1));
+        } catch (NoResultException e)
+        {
+            System.out.println("Пользователь не найден и/или неверная пара email-пароль");
+        }
+        return client;
+    }
 
     public static void main(String[] args)
     {
         GenericXmlApplicationContext appCtx = new GenericXmlApplicationContext("/spring/spring-config.xml");
         Server server = appCtx.getBean(Server.class);
         server.run();
-        /*ApplicationContext ctx =
-                new AnnotationConfigApplicationContext("package"); // Use annotated beans from the specified package
-
-        Main main = ctx.getBean(Main.class);
-        main.sampleService.getHelloWorld();*/
-
     }
 }

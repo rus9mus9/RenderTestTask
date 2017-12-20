@@ -6,5 +6,5 @@ public interface ClientRepo
 {
     Client createNewUser(Client client);
     Client getUser(int userId);
-    Client getUserByEmailPassword(String email);
+    Client getClientByEmailPassword(String email, String password);
 }

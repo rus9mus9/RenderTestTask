@@ -5,15 +5,14 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.util.List;
-
-@NamedQuery(name = Client.GET_BY_EMAIL, query = "SELECT c FROM Client c WHERE c.email=:clientEmail")
+@NamedQueries({
+@NamedQuery(name = Client.GET_BY_EMAIL_PASSWORD, query = "SELECT c FROM Client c WHERE c.email=:clientEmail AND c.password=:password")
+})
 @Entity
 @Table(name = "render_users", uniqueConstraints = {@UniqueConstraint(columnNames = "email", name = "users_unique_email_idx")})
 public class Client
 {
-
-    public static final String GET_BY_EMAIL = "User.getByEmail";
-
+    public static final String GET_BY_EMAIL_PASSWORD = "Client.getClientByEmailPassword";
 
     @Id
     @SequenceGenerator(name = "global_seq", sequenceName = "global_seq", allocationSize = 1)
@@ -34,6 +33,15 @@ public class Client
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "client")//, cascade = CascadeType.REMOVE, orphanRemoval = true)
     @OrderBy("timeCreated DESC")
     private List<Task> tasks;
+
+    public Client(String email, String password)
+    {
+    }
+
+    public Client()
+    {
+
+    }
 
     public Integer getId()
     {

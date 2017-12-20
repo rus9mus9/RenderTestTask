@@ -20,4 +20,7 @@ CREATE TABLE users_tasks
   status VARCHAR,
   time_created TIMESTAMP DEFAULT now()  NOT NULL,
   FOREIGN KEY (user_id) REFERENCES render_users (id) ON DELETE CASCADE
-)
+);
+
+INSERT INTO render_users(email, password)
+VALUES('mussalimov46@gmail.com', 'herewego');
