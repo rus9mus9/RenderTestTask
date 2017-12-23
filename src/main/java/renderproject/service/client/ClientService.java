@@ -8,4 +8,5 @@ public interface ClientService
     Client createNewUser(Client client);
     Client getClient(int userId);
     Client getClientByEmailPassword(String email, String password);
+    boolean isClientExist(String email);
 }

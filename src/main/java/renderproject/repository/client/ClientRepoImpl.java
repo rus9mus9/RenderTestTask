@@ -28,8 +28,35 @@ public class ClientRepoImpl implements ClientRepo
 
     public Client getClientByEmailPassword(String email, String password)
     {
-        return em.createNamedQuery(Client.GET_BY_EMAIL_PASSWORD, Client.class)
+        Client client;
+        try
+        {
+        client =  em.createNamedQuery(Client.GET_BY_EMAIL_PASSWORD, Client.class)
                .setParameter("clientEmail", email)
                .setParameter("password", password).getSingleResult();
+        return client;
+        }
+        catch (NoResultException e)
+        {
+
+        }
+        return null;
+    }
+
+
+    @Override
+    public boolean isClientExist(String email)
+    {
+        try
+        {
+            em.createNamedQuery(Client.DOES_EMAIL_EXIST, Client.class)
+                    .setParameter("clientEmail", email).getSingleResult();
+            return true;
+        }
+        catch (NoResultException e)
+        {
+
+        }
+        return false;
     }
 }

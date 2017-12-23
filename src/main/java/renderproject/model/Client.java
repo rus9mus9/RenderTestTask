@@ -6,13 +6,15 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.util.List;
 @NamedQueries({
-@NamedQuery(name = Client.GET_BY_EMAIL_PASSWORD, query = "SELECT c FROM Client c WHERE c.email=:clientEmail AND c.password=:password")
+@NamedQuery(name = Client.GET_BY_EMAIL_PASSWORD, query = "SELECT c FROM Client c WHERE c.email=:clientEmail AND c.password=:password"),
+@NamedQuery(name = Client.DOES_EMAIL_EXIST, query = "SELECT c FROM Client c WHERE c.email=:clientEmail")
 })
 @Entity
 @Table(name = "render_users", uniqueConstraints = {@UniqueConstraint(columnNames = "email", name = "users_unique_email_idx")})
 public class Client
 {
     public static final String GET_BY_EMAIL_PASSWORD = "Client.getClientByEmailPassword";
+    public static final String DOES_EMAIL_EXIST = "Client.isClientExist";
 
     @Id
     @SequenceGenerator(name = "global_seq", sequenceName = "global_seq", allocationSize = 1)

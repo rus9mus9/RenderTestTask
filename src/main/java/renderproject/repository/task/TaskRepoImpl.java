@@ -1,5 +1,6 @@
 package renderproject.repository.task;
 
+import org.springframework.transaction.annotation.Transactional;
 import renderproject.model.Client;
 import renderproject.model.RenderingStatus;
 import renderproject.model.Task;
@@ -15,6 +16,7 @@ public class TaskRepoImpl implements TaskRepo
     @PersistenceContext
     private EntityManager em;
 
+    @Transactional
     public Task createTask(Task task, int userId)
     {
         task.setClient(em.getReference(Client.class, userId));

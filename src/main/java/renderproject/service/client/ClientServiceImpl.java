@@ -32,4 +32,10 @@ public class ClientServiceImpl implements ClientService
         return clientRepo.getClientByEmailPassword(email, password);
     }
 
+    @Override
+    public boolean isClientExist(String email)
+    {
+        return clientRepo.isClientExist(email);
+    }
+
 }
