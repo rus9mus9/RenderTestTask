@@ -56,12 +56,24 @@ public class UserClient
             {
                 System.out.println("Неверная пара логин/пароль. Повторить попытку?");
             }
-            else if(authResultObject.get("authorizeResult").toString().contains("success"))
+            else if(authResultObject.get("authorizeResult").equals("success"))
             {
-                System.out.println("Добро пожаловать! " + authResultObject.get("authorizeResult").toString().substring(authResultObject.get("authorizeResult").toString().lastIndexOf("=") + 1));
+                System.out.println("Добро пожаловать " + authResultObject.get("userEmail") + "!");
                 JSONObject arrayOfLoggedUser = new JSONObject(inputFromServer.readLine());
                 printFromJSONArray(arrayOfLoggedUser.getJSONArray("loggedUserCommands"));
                 proposeUserInputCode(1, 4, outputToServer);
+
+                JSONObject taskRequestObject = new JSONObject(inputFromServer.readLine());
+
+                if(taskRequestObject.get("taskRequest").equals("new task created"))
+                {
+                    System.out.println("Задача с id=" + taskRequestObject.get("taskId") + " создана!");
+                }
+
+                else if(taskRequestObject.get("taskRequest").equals("get all tasks"))
+                {
+                    printFromJSONArray(taskRequestObject.getJSONObject("tasksForUser").getJSONArray("tasks"));
+                }
             }
         }
 
@@ -82,20 +94,6 @@ public class UserClient
             Thread.sleep(3000);
             System.exit(0);
         }
-
-       /* String greetingInJSON = inputFromServer.readLine();
-        JSONObject serverResponse = new JSONObject(greetingInJSON);*/
-
-        //printMultipleLinesFromServerIS(inputFromServer);
-        //String resultToServer = userInput.nextLine();
-        //outputToServer.write("3");
-
-        /*String serverResponse = inputFromServer.readLine();
-        if(serverResponse.equals("Удачи!"))
-        {
-            Thread.sleep(5000);
-            System.exit(0);
-        }*/
     }
 
     private static List<String> proposeUserInputCredentials() throws Exception

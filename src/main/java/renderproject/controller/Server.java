@@ -5,16 +5,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.stereotype.Component;
 import renderproject.model.Client;
+import renderproject.model.RenderingStatus;
 import renderproject.model.Task;
 import renderproject.service.client.ClientService;
 import renderproject.service.task.TaskService;
 
-import javax.persistence.NoResultException;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class Server
@@ -64,6 +63,9 @@ public class Server
 
     private static JSONObject userDoesntExitJSONObject = new JSONObject().put("authorizeResult", "user doesn't exit");
 
+    private static JSONObject newTaskJSONObject = new JSONObject().put("taskRequest", "new task created");
+
+    private static JSONObject getAllTasksJSONObject = new JSONObject().put("taskRequest", "get all tasks");
 
     private static JSONObject generateJSONObjectInitialCommands()
     {
@@ -136,12 +138,8 @@ public class Server
 
                                 if(authorizedClient != null)
                                 {
-                                    JSONObject successCredentialsJSONObjectinner = new JSONObject();
-                                    //successCredentialsJSONObjectinner.put("userEmail", authorizedClient.getEmail());
-                                    successCredentialsJSONObjectinner.put("authorizeResult", "success?email=" + authorizedClient.getEmail());
-                                    //System.out.println(successCredentialsJSONObject.getJSONObject("authorizeResult").put("userEmail", authorizedClient.getEmail()));
-                                    //outputToUser.write(successCredentialsJSONObject.toString() + "\n");
-                                    outputToUser.write(successCredentialsJSONObjectinner.toString() + "\n");
+                                    successCredentialsJSONObject.put("userEmail", authorizedClient.getEmail());
+                                    outputToUser.write(successCredentialsJSONObject.toString() + "\n");
                                     //outputToUser.write("Добро пожаловать " + authorizedClient.getEmail() + "\n");
                                     outputToUser.flush();
 
@@ -153,7 +151,30 @@ public class Server
                                     if(codeFromUser == 1)
                                     {
                                         Task task = new Task();
+                                        task.setStatus(RenderingStatus.RENDERING);
                                         taskService.createTask(task, authorizedClient.getId());
+                                        newTaskJSONObject.put("taskId", task.getTask_id());
+                                        outputToUser.write(newTaskJSONObject.toString() + "\n");
+                                        outputToUser.flush();
+                                    }
+
+                                    if(codeFromUser == 2)
+                                    {
+                                        JSONObject allUsersTasksObject = new JSONObject();
+                                        //List<Task> allUsersTasks = taskService.getTasksForUser(authorizedClient.getId());
+                                        JSONArray allUsersTasksJSONArray = new JSONArray();
+
+                                        for(Task task : taskService.getTasksForUser(authorizedClient.getId()))
+                                        {
+                                            allUsersTasksJSONArray.put(task);
+                                        }
+                                        allUsersTasksObject.put("tasks", allUsersTasksJSONArray);
+                                        getAllTasksJSONObject.put("tasksForUser", allUsersTasksObject);
+
+                                        System.out.println(getAllTasksJSONObject.toString() );
+
+                                        outputToUser.write(getAllTasksJSONObject.toString() + "\n");
+                                        outputToUser.flush();
                                     }
                                 }
                                 else

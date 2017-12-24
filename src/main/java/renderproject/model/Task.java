@@ -7,7 +7,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 
-@NamedQuery(name = Task.ALL_TASKS, query = "SELECT t FROM Task t WHERE t.client.id=:clientId ORDER BY t.timeCreated DESC")
+@NamedQuery(name = Task.ALL_TASKS, query = "SELECT t FROM Task t WHERE t.client.id=:userId ORDER BY t.timeCreated DESC")
 @Entity
 @Table(name = "users_tasks")
 public class Task
@@ -17,7 +17,7 @@ public class Task
     @Id
     @SequenceGenerator(name = "global_seq", sequenceName = "global_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "global_seq")
-    private Integer task_id;
+    private Integer id;
 
 
     @Enumerated(EnumType.STRING)
@@ -49,6 +49,16 @@ public class Task
         return client;
     }
 
+    @Override
+    public String toString()
+    {
+        return "Task{" +
+                "id=" + id +
+                ", status=" + status +
+                ", timeCreated=" + timeCreated +
+                '}';
+    }
+
     public void setClient(Client client)
     {
         this.client = client;
@@ -66,11 +76,11 @@ public class Task
 
     public int getTask_id()
     {
-        return task_id;
+        return id;
     }
 
     public void setTask_id(int task_id)
     {
-        this.task_id = task_id;
+        this.id = task_id;
     }
 }
