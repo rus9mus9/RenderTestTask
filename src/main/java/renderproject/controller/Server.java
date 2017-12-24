@@ -4,10 +4,10 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.stereotype.Component;
-import renderproject.model.Client;
+import renderproject.model.User;
 import renderproject.model.RenderingStatus;
 import renderproject.model.Task;
-import renderproject.service.client.ClientService;
+import renderproject.service.user.UserService;
 import renderproject.service.task.TaskService;
 
 import java.io.*;
@@ -18,12 +18,12 @@ import java.util.*;
 @Component
 public class Server
 {
-    private static final Map<Integer, HashMap<Integer, String>> commandMap = new HashMap<Integer, HashMap<Integer, String>>();
-    private static final Map<Integer, String> initialCommands = new HashMap<Integer, String>();
-    private static final Map<Integer, String> userCommands = new HashMap<Integer, String>();
+    private static final Map<Integer, HashMap<Integer, String>> commandMap = new HashMap<>();
+    private static final Map<Integer, String> initialCommands = new HashMap<>();
+    private static final Map<Integer, String> userCommands = new HashMap<>();
 
     @Autowired
-    private ClientService clientService;
+    private UserService userService;
 
     @Autowired
     private TaskService taskService;
@@ -42,8 +42,6 @@ public class Server
         commandMap.put(1, (HashMap<Integer, String>) initialCommands);
         commandMap.put(2, (HashMap<Integer, String>) userCommands);
     }
-
-    private static final BufferedReader inputStream = new BufferedReader(new InputStreamReader(System.in));
 
     private static JSONObject initialCommandsJSON = generateJSONObjectInitialCommands();
 
@@ -66,6 +64,10 @@ public class Server
     private static JSONObject newTaskJSONObject = new JSONObject().put("taskRequest", "new task created");
 
     private static JSONObject getAllTasksJSONObject = new JSONObject().put("taskRequest", "get all tasks");
+
+    private static JSONObject getStatusForOneTaskJSONObject = new JSONObject().put("taskRequest", "get status for one");
+
+    private static JSONObject goToMainMenuJSONObject = new JSONObject().put("taskRequest", "mainMenu");
 
     private static JSONObject generateJSONObjectInitialCommands()
     {
@@ -106,12 +108,12 @@ public class Server
                     {
                         BufferedReader inputFromUser = new BufferedReader(new InputStreamReader(socket.getInputStream())); // <- To get something from user
                         OutputStreamWriter outputToUser = new OutputStreamWriter(socket.getOutputStream());  // <- To send something to the user
-                        //System.out.println(object.toString());
-
 
                         outputToUser.write(greetingJSONObject.toString() + "\n");
                         outputToUser.flush();
 
+                        while(true)
+                        {
                         outputToUser.write(initialCommandsJSON.toString() + "\n");
                         outputToUser.flush();
 
@@ -134,15 +136,16 @@ public class Server
                             }
                             else
                             {
-                                Client authorizedClient = tryLogin(email, password);
+                                User authorizedUser = tryLogin(email, password);
 
-                                if(authorizedClient != null)
+                                if(authorizedUser != null)
                                 {
-                                    successCredentialsJSONObject.put("userEmail", authorizedClient.getEmail());
+                                    successCredentialsJSONObject.put("userEmail", authorizedUser.getEmail());
                                     outputToUser.write(successCredentialsJSONObject.toString() + "\n");
-                                    //outputToUser.write("Добро пожаловать " + authorizedClient.getEmail() + "\n");
                                     outputToUser.flush();
 
+                                    while(true)
+                                    {
                                     outputToUser.write(loggedUserCommandsJSON.toString() + "\n");
                                     outputToUser.flush();
 
@@ -152,47 +155,99 @@ public class Server
                                     {
                                         Task task = new Task();
                                         task.setStatus(RenderingStatus.RENDERING);
-                                        taskService.createTask(task, authorizedClient.getId());
+                                        taskService.createTask(task, authorizedUser.getId());
                                         newTaskJSONObject.put("taskId", task.getTask_id());
                                         outputToUser.write(newTaskJSONObject.toString() + "\n");
                                         outputToUser.flush();
                                     }
 
-                                    if(codeFromUser == 2)
+                                    else if(codeFromUser == 2)
                                     {
                                         JSONObject allUsersTasksObject = new JSONObject();
-                                        //List<Task> allUsersTasks = taskService.getTasksForUser(authorizedClient.getId());
                                         JSONArray allUsersTasksJSONArray = new JSONArray();
 
-                                        for(Task task : taskService.getTasksForUser(authorizedClient.getId()))
+                                        for(Task task : taskService.getTasksForUser(authorizedUser.getId()))
                                         {
+                                            if((new Date().getTime() / 1000) - (task.getTimeCreated().getTime() / 1000) > 180)
+                                            {
+                                                task.setStatus(RenderingStatus.COMPLETE);
+                                                taskService.update(task, authorizedUser.getId());
+                                            }
                                             allUsersTasksJSONArray.put(task);
                                         }
                                         allUsersTasksObject.put("tasks", allUsersTasksJSONArray);
                                         getAllTasksJSONObject.put("tasksForUser", allUsersTasksObject);
-
-                                        System.out.println(getAllTasksJSONObject.toString() );
-
                                         outputToUser.write(getAllTasksJSONObject.toString() + "\n");
                                         outputToUser.flush();
+                                    }
+                                    else if(codeFromUser == 3)
+                                    {
+
+                                        outputToUser.write(getStatusForOneTaskJSONObject.toString() + "\n");
+                                        outputToUser.flush();
+
+                                        int taskId = Integer.parseInt(inputFromUser.readLine());
+                                        Task task = taskService.getTaskById(taskId, authorizedUser.getId());
+
+                                        JSONObject taskRenderingResult = new JSONObject();
+
+                                        if(task != null)
+                                        {
+                                            if((new Date().getTime() / 1000) - (task.getTimeCreated().getTime() / 1000) > 180)
+                                            {
+                                                task.setStatus(RenderingStatus.COMPLETE);
+                                                taskService.update(task, authorizedUser.getId());
+                                            }
+                                            taskRenderingResult.put("result", task.getStatus());
+                                        }
+                                        else
+                                        {
+                                            taskRenderingResult.put("result", "");
+                                        }
+                                        getStatusForOneTaskJSONObject.put("taskGettingResult", taskRenderingResult);
+                                        outputToUser.write(getStatusForOneTaskJSONObject.toString() + "\n");
+                                        outputToUser.flush();
+                                    }
+
+                                    else if(codeFromUser == 4)
+                                    {
+                                        outputToUser.write(goToMainMenuJSONObject.toString() + "\n");
+                                        outputToUser.flush();
+                                        break;
+                                    }
                                     }
                                 }
                                 else
                                 {
                                     outputToUser.write(badCredentialsJSONObject.toString() + "\n");
-                                    //outputToUser.write("Неверная пара логин/пароль. Повторить попытку?" + "\n");
                                     outputToUser.flush();
                                 }
                             }
 
-
-
-                            //Client authorizedClient = tryLogin(inputFromUser, outputToUser);
                         }
                         else if(codeFromUser == 2)
                         {
                             outputToUser.write(registerActionJSONObject.toString() + "\n");
                             outputToUser.flush();
+                            JSONObject userCredentials = new JSONObject(inputFromUser.readLine());
+
+                            String email = userCredentials.getJSONObject("userCredentials").get("email").toString();
+                            String password = userCredentials.getJSONObject("userCredentials").get("password").toString();
+
+                            JSONObject regResult = new JSONObject();
+
+                            if(!userService.isClientExist(email))
+                            {
+                                userService.createNewUser(new User(email, password));
+                                regResult.put("regResult", "success");
+                            }
+                            else
+                                {
+                                    regResult.put("regResult", "userAlreadyExists");
+                                }
+
+                         outputToUser.write(regResult.toString() + "\n");
+                         outputToUser.flush();
                         }
                         else
                         {
@@ -200,7 +255,7 @@ public class Server
                             outputToUser.flush();
                         }
 
-                    }
+                    }}
                 catch (Exception e)
                 {
                     e.printStackTrace();
@@ -235,73 +290,17 @@ public class Server
             s1.close();
         }
 
-           /* while(true)
-            {
-            //generateJSONObjectInitialCommands();
-
-            String userInput = inputStream.readLine();
-            int initialCode = Integer.parseInt(userInput);
-
-            if(initialCode == 1)
-            {
-                Client loggedClient = tryLogin();
-
-                if(loggedClient != null)
-                {
-                    System.out.println("Привет, " + loggedClient.getEmail() + "! Выбери дальнейшее действие:");
-
-                   // showLoggedUserCommands();
-                }
-                /*else
-                    {
-                        continue;
-                    }*/
-                /*userInput = inputStream.readLine();
-
-                if(Integer.parseInt(userInput) == 1)
-                {
-                    taskService.createTask(new Task(), client.getId());
-                    System.out.println("Задача успешно создана!");
-                }
-
-                else if(Integer.parseInt(userInput) == 2)
-                {
-                    taskService.getTasksForUser(client.getId());
-                }*/
-
-            /*else if(initialCode == 2)
-            {
-               System.out.println("Регистрация нового пользователя");
-               List<String> newUserCredentials =  proposeUserInputCredentials();
-               System.out.println("Подтвердите пароль");
-               String verifyPassword = inputStream.readLine();
-               if(!newUserCredentials.get(1).equals(verifyPassword))
-               {
-                   System.out.println("Введенные пароли не совпадают.");
-               }
-               else
-                   {
-                       clientService.createNewUser(new Client(newUserCredentials.get(0), newUserCredentials.get(1)));
-                   }
-            }
-            else if(initialCode == 3)
-            {
-                System.out.println("Удачи! :)");
-                Thread.sleep(3000);
-                System.exit(0);
-            }*/
-
         }
 
 
-    private Client tryLogin(String email, String password) throws Exception
+    private User tryLogin(String email, String password) throws Exception
     {
-        return clientService.getClientByEmailPassword(email, password);
+        return userService.getClientByEmailPassword(email, password);
     }
 
-    public boolean isEmailExist(String email)
+    private boolean isEmailExist(String email)
     {
-        return clientService.isClientExist(email);
+        return userService.isClientExist(email);
     }
 
     public static void main(String[] args) throws Exception
@@ -312,232 +311,4 @@ public class Server
     }
 }
 
-
-
-
-/*
-public class 123
-{
-    private static final Map<Integer, HashMap<Integer, String>> commandMap = new HashMap<Integer, HashMap<Integer, String>>();
-    private static final Map<Integer, String> initialCommands = new HashMap<Integer, String>();
-    private static final Map<Integer, String> userCommands = new HashMap<Integer, String>();
-
-    @Autowired
-    private ClientService clientService;
-
-    @Autowired
-    private TaskService taskService;
-
-    private static final BufferedReader inputStream = new BufferedReader(new InputStreamReader(System.in));
-
-    private static final String emailRegex = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])";
-
-    static
-    {
-        initialCommands.put(1, "Вход");
-        initialCommands.put(2, "Регистрация");
-        initialCommands.put(3, "Выход из программы");
-
-        userCommands.put(1, "Создать новую задачу");
-        userCommands.put(2, "Получить список задач");
-        userCommands.put(3, "Получить статус задачи");
-        userCommands.put(4, "Выйти в главное меню");
-
-        commandMap.put(1, (HashMap<Integer, String>) initialCommands);
-        commandMap.put(2, (HashMap<Integer, String>) userCommands);
-    }
-
-    private void showInitialCommandsToUser() throws Exception
-    {
-        // String [] initialCommands = new String[5];
-        JSONObject object = new JSONObject();
-        //JSONObject object = new JSONObject();
-
-        JSONArray initialCommands = new JSONArray();
-
-        for(Map.Entry entry: commandMap.get(1).entrySet())
-        {
-           *//* outputStreamWriter.write(entry.getKey() + " - " + entry.getValue());
-            object.put(entry.getKey().toString(), entry.getValue().toString());*//*
-            initialCommands.put(entry.getValue().toString());
-        }
-        object.put("commands", initialCommands);
-        System.out.println(object.toString());
-        //outputStreamWriter.flush();
-    }
-
-    private void showLoggedUserCommands(OutputStreamWriter outputStreamWriter) throws Exception
-    {
-        for (Map.Entry entry : commandMap.get(2).entrySet())
-        {
-            outputStreamWriter.write(entry.getKey() + " - " + entry.getValue());
-        }
-        //outputStreamWriter.flush();
-    }
-
-    private void startHandler(Socket socket) throws Exception
-    {
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    BufferedReader inputFromUser = new BufferedReader(new InputStreamReader(socket.getInputStream())); // <- To get something from user
-                    OutputStreamWriter outputToUser = new OutputStreamWriter(socket.getOutputStream());  // <- To send something to the user
-                    JSONObject object = new JSONObject();
-                    object.put("greetingMessage", "Добро пожаловать, выбери дальнейшее действие: ");
-                    //System.out.println(object.toString());
-                    outputToUser.write(object.toString() + "\n");
-                    outputToUser.flush();
-                    //outputToUser.write("Добро пожаловать, выбери дальнейшее действие: \n");
-                    //showInitialCommandsToUser(outputToUser);
-                *//*String resultFromUser = inputFromUser.readLine();
-                System.out.println(resultFromUser);*//*
-
-                    //List<String> commands = new ArrayList<>();
-                    //object.put("greetingUserAndInitialCommands", commands);
-                *//*int initialCode = Integer.parseInt(inputFromUser.readLine());
-                System.out.println(initialCode);
-                if(initialCode == 3)
-                {
-                    outputToUser.write("Удачи!");
-
-                }
-*//*
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                finally
-                {
-                    try
-                    {
-                        socket.close();
-                    } catch (IOException e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        };
-        thread.start();
-    }
-
-    private void run() throws Exception
-    {
-        System.out.println("Server has started successfully");
-        ServerSocket s1 = new ServerSocket(5555);
-        try
-        {
-            while (true)
-            {
-                Socket ss = s1.accept();
-                startHandler(ss);
-            }
-        } finally
-        {
-            s1.close();
-        }
-
-           *//* while(true)
-            {
-            //showInitialCommandsToUser();
-
-            String userInput = inputStream.readLine();
-            int initialCode = Integer.parseInt(userInput);
-
-            if(initialCode == 1)
-            {
-                Client loggedClient = tryLogin();
-
-                if(loggedClient != null)
-                {
-                    System.out.println("Привет, " + loggedClient.getEmail() + "! Выбери дальнейшее действие:");
-
-                   // showLoggedUserCommands();
-                }
-                *//*else
-                    {
-                        continue;
-                    }*//*
-                *//*userInput = inputStream.readLine();
-
-                if(Integer.parseInt(userInput) == 1)
-                {
-                    taskService.createTask(new Task(), client.getId());
-                    System.out.println("Задача успешно создана!");
-                }
-
-                else if(Integer.parseInt(userInput) == 2)
-                {
-                    taskService.getTasksForUser(client.getId());
-                }*//*
-
-            *//*else if(initialCode == 2)
-            {
-               System.out.println("Регистрация нового пользователя");
-               List<String> newUserCredentials =  proposeUserInputCredentials();
-               System.out.println("Подтвердите пароль");
-               String verifyPassword = inputStream.readLine();
-               if(!newUserCredentials.get(1).equals(verifyPassword))
-               {
-                   System.out.println("Введенные пароли не совпадают.");
-               }
-               else
-                   {
-                       clientService.createNewUser(new Client(newUserCredentials.get(0), newUserCredentials.get(1)));
-                   }
-            }
-            else if(initialCode == 3)
-            {
-                System.out.println("Удачи! :)");
-                Thread.sleep(3000);
-                System.exit(0);
-            }*//*
-
-    }
-
-    private List<String> proposeUserInputCredentials() throws Exception
-    {
-        List<String> userCredentials = new ArrayList<>();
-        System.out.println("Введите адрес электронной почты:");
-        String userEmail = inputStream.readLine();
-        while(!userEmail.matches(emailRegex))
-        {
-            System.out.println("Некорректный email. Попробуйте еще раз.");
-            userEmail = inputStream.readLine();
-        }
-        System.out.println("Введите пароль");
-        String userPassword = inputStream.readLine();
-        userCredentials.add(userEmail);
-        userCredentials.add(userPassword);
-        return userCredentials;
-    }
-
-    private Client tryLogin() throws Exception
-    {
-        List<String> credentials = proposeUserInputCredentials();
-        Client client = null;
-        try
-        {
-            client = clientService.getClientByEmailPassword(credentials.get(0), credentials.get(1));
-        } catch (NoResultException e)
-        {
-            System.out.println("Пользователь не найден и/или неверная пара email-пароль");
-        }
-        return client;
-    }
-
-    public static void main(String[] args) throws Exception
-    {
-        Server server = new Server();
-        server.showInitialCommandsToUser();
-        *//*GenericXmlApplicationContext appCtx = new GenericXmlApplicationContext("/spring/spring-config.xml");
-        Server server = appCtx.getBean(Server.class);
-        server.run();*//*
-    }
-}*/
 

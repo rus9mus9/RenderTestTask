@@ -1,8 +1,8 @@
 package renderproject.repository.task;
 
 import org.springframework.transaction.annotation.Transactional;
-import renderproject.model.Client;
 import renderproject.model.RenderingStatus;
+import renderproject.model.User;
 import renderproject.model.Task;
 import org.springframework.stereotype.Repository;
 
@@ -19,9 +19,21 @@ public class TaskRepoImpl implements TaskRepo
     @Transactional
     public Task createTask(Task task, int userId)
     {
-        task.setClient(em.getReference(Client.class, userId));
+        task.setUser(em.getReference(User.class, userId));
         em.persist(task);
         return task;
+    }
+
+    @Override
+    @Transactional
+    public Task update(Task task, int userId)
+    {
+        if(getTaskById(task.getTask_id(), userId) == null)
+        {
+            return null;
+        }
+        task.setUser(em.getReference(User.class, userId));
+        return em.merge(task);
     }
 
     public List<Task> getTasksForUser(int userId)
@@ -30,9 +42,18 @@ public class TaskRepoImpl implements TaskRepo
                 .setParameter("userId", userId).getResultList();
     }
 
-    public RenderingStatus getRenderingStatus(int taskId, int userId)
+    public Task getTaskById(int taskId, int userId)
     {
-        Task task = em.find(Task.class, taskId);
-        return task.getClient().getId() == userId ? task.getStatus() : null;
+        try
+        {
+            Task task = em.find(Task.class, taskId);
+            return task.getUser().getId() == userId ? task : null;
+        }
+        catch (NullPointerException e)
+        {
+
+        }
+        return null;
     }
+
 }

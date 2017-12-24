@@ -9,5 +9,6 @@ public interface TaskService
 {
     Task createTask(Task task, int userId);
     List<Task> getTasksForUser(int userId);
-    RenderingStatus getRenderingStatus(int taskId, int userId);
+    Task getTaskById(int taskId, int userId);
+    Task update(Task task, int userId);
 }

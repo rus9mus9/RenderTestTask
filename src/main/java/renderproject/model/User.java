@@ -6,15 +6,15 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.util.List;
 @NamedQueries({
-@NamedQuery(name = Client.GET_BY_EMAIL_PASSWORD, query = "SELECT c FROM Client c WHERE c.email=:clientEmail AND c.password=:password"),
-@NamedQuery(name = Client.DOES_EMAIL_EXIST, query = "SELECT c FROM Client c WHERE c.email=:clientEmail")
+@NamedQuery(name = User.GET_BY_EMAIL_PASSWORD, query = "SELECT c FROM User c WHERE c.email=:userEmail AND c.password=:userPassword"),
+@NamedQuery(name = User.DOES_EMAIL_EXIST, query = "SELECT c FROM User c WHERE c.email=:userEmail")
 })
 @Entity
 @Table(name = "render_users", uniqueConstraints = {@UniqueConstraint(columnNames = "email", name = "users_unique_email_idx")})
-public class Client
+public class User
 {
-    public static final String GET_BY_EMAIL_PASSWORD = "Client.getClientByEmailPassword";
-    public static final String DOES_EMAIL_EXIST = "Client.isClientExist";
+    public static final String GET_BY_EMAIL_PASSWORD = "User.getClientByEmailPassword";
+    public static final String DOES_EMAIL_EXIST = "User.isClientExist";
 
     @Id
     @SequenceGenerator(name = "global_seq", sequenceName = "global_seq", allocationSize = 1)
@@ -32,15 +32,17 @@ public class Client
     @Size(min = 5, max = 64)
     private String password;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "client")//, cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")//, cascade = CascadeType.REMOVE, orphanRemoval = true)
     @OrderBy("timeCreated DESC")
     private List<Task> tasks;
 
-    public Client(String email, String password)
+    public User(String email, String password)
     {
+        this.email = email;
+        this.password = password;
     }
 
-    public Client()
+    public User()
     {
 
     }

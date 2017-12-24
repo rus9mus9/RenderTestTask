@@ -8,7 +8,7 @@
     <import resource="spring-db.xml"/>
     <context:annotation-config/>
 
-    <context:component-scan base-package="renderproject.service.client"/>
+    <context:component-scan base-package="renderproject.service.user"/>
     <context:component-scan base-package="renderproject.service.task"/>
     <context:component-scan base-package="renderproject.controller"/>
 

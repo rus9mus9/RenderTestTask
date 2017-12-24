@@ -1,7 +1,5 @@
 package renderproject.service.task;
 
-import renderproject.model.Client;
-import renderproject.model.RenderingStatus;
 import renderproject.model.Task;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,8 +28,14 @@ public class TaskServiceImpl implements TaskService
         return taskRepo.getTasksForUser(userId);
     }
 
-    public RenderingStatus getRenderingStatus(int taskId, int userId)
+    public Task getTaskById(int taskId, int userId)
     {
-        return taskRepo.getRenderingStatus(taskId, userId);
+        return taskRepo.getTaskById(taskId, userId);
+    }
+
+    @Override
+    public Task update(Task task, int userId)
+    {
+        return taskRepo.update(task, userId);
     }
 }

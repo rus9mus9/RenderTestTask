@@ -4,10 +4,12 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.text.DateFormat;
 import java.util.Date;
 
-
-@NamedQuery(name = Task.ALL_TASKS, query = "SELECT t FROM Task t WHERE t.client.id=:userId ORDER BY t.timeCreated DESC")
+@NamedQueries({
+@NamedQuery(name = Task.ALL_TASKS, query = "SELECT t FROM Task t WHERE t.user.id=:userId ORDER BY t.timeCreated DESC")
+})
 @Entity
 @Table(name = "users_tasks")
 public class Task
@@ -28,7 +30,7 @@ public class Task
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private Client client;
+    private User user;
 
     @Column(name = "time_created", nullable = false)
     @NotNull
@@ -44,9 +46,9 @@ public class Task
     {
         this.timeCreated = timeCreated;
     }
-    public Client getClient()
+    public User getUser()
     {
-        return client;
+        return user;
     }
 
     @Override
@@ -54,14 +56,14 @@ public class Task
     {
         return "Task{" +
                 "id=" + id +
-                ", status=" + status +
-                ", timeCreated=" + timeCreated +
+                ", статус - " + status +
+                ", время создания:" + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(timeCreated) +
                 '}';
     }
 
-    public void setClient(Client client)
+    public void setUser(User user)
     {
-        this.client = client;
+        this.user = user;
     }
 
     public RenderingStatus getStatus()

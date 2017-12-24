@@ -22,5 +22,3 @@ CREATE TABLE users_tasks
   FOREIGN KEY (user_id) REFERENCES render_users (id) ON DELETE CASCADE
 );
 
-INSERT INTO render_users(email, password)
-VALUES('mussalimov46@gmail.com', 'herewego');

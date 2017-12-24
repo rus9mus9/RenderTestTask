@@ -22,7 +22,7 @@
         <property name="password" value="${database.password}"/>
     </bean>
 
-    <context:component-scan base-package="renderproject.repository.client"/>
+    <context:component-scan base-package="renderproject.repository.user"/>
     <context:component-scan base-package="renderproject.repository.task"/>
     <bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"
           p:dataSource-ref="dataSource"

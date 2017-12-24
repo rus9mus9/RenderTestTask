@@ -16,16 +16,15 @@ public class UserClient
 
     public static void main(String[] args) throws Exception
     {
-        //String resultFromServer;
         Socket socket = new Socket("127.0.0.1", 5555);
         BufferedReader inputFromServer = new BufferedReader(new InputStreamReader(socket.getInputStream())); // <- To get something from the server
-        //System.out.println("test");
-       // BufferedWriter outputToServer = new BufferedWriter(new socket.getOutputStream()); // <- To send something to the server
-        OutputStreamWriter outputToServer = new OutputStreamWriter(socket.getOutputStream());
+        OutputStreamWriter outputToServer = new OutputStreamWriter(socket.getOutputStream()); // <- To send something to the server
 
         JSONObject greetingObject = new JSONObject(inputFromServer.readLine());
         System.out.println(greetingObject.get("greetingMessage"));
 
+        while(true)
+        {
         JSONObject arrayOfInitialCommands = new JSONObject(inputFromServer.readLine());
         printFromJSONArray(arrayOfInitialCommands.getJSONArray("initialCommands"));
 
@@ -50,15 +49,17 @@ public class UserClient
 
             if(authResultObject.get("authorizeResult").equals("user doesn't exit"))
             {
-                System.out.println("Пользователь с таким email не найден. Желаете зарегистрироваться?");
+                System.out.println("Пользователь с таким email не найден.");
             }
             else if(authResultObject.get("authorizeResult").equals("bad credentials"))
             {
-                System.out.println("Неверная пара логин/пароль. Повторить попытку?");
+                System.out.println("Неверная пара логин/пароль.");
             }
             else if(authResultObject.get("authorizeResult").equals("success"))
             {
                 System.out.println("Добро пожаловать " + authResultObject.get("userEmail") + "!");
+                while(true)
+                {
                 JSONObject arrayOfLoggedUser = new JSONObject(inputFromServer.readLine());
                 printFromJSONArray(arrayOfLoggedUser.getJSONArray("loggedUserCommands"));
                 proposeUserInputCode(1, 4, outputToServer);
@@ -74,25 +75,74 @@ public class UserClient
                 {
                     printFromJSONArray(taskRequestObject.getJSONObject("tasksForUser").getJSONArray("tasks"));
                 }
+
+                else if(taskRequestObject.get("taskRequest").equals("get status for one"))
+                {
+                    System.out.println("Введите ID задачи");
+                    proposeUserInputTaskId(outputToServer);
+
+                    JSONObject result = new JSONObject(inputFromServer.readLine());
+
+                    if(!result.getJSONObject("taskGettingResult").get("result").equals(""))
+                    {
+                        System.out.println("Статус задачи - " + result.getJSONObject("taskGettingResult").get("result"));
+                    }
+                    else
+                        {
+                            System.out.println("Задача с таким ID не найдена");
+                        }
+                }
+
+                else if(taskRequestObject.get("taskRequest").equals("mainMenu"))
+                {
+                    break;
+                }
+                }
             }
         }
 
         else if(initialCodeResult.get("action").equals("register"))
         {
-            System.out.println("Регистрация нового пользователя");
+            //JSONObject verifyResult = new JSONObject();
+            System.out.println("Регистрация нового пользователя.");
             List<String> newUserCredentials =  proposeUserInputCredentials();
-            System.out.println("Подтвердите пароль");
+            System.out.println("Подтвердите пароль:");
             String verifyPassword = userInput.nextLine();
             if(!newUserCredentials.get(1).equals(verifyPassword))
             {
-                System.out.println("Введенные пароли не совпадают. Повторить попытку?");
+                System.out.println("Введенные пароли не совпадают.");
+                //verifyResult.put("result", "failed");
+            }
+            else
+            {
+                JSONObject credentialsJSON = new JSONObject();
+                Map<String, String> credentialMap = new HashMap<>();
+                credentialMap.put("email", newUserCredentials.get(0));
+                credentialMap.put("password", newUserCredentials.get(1));
+                credentialsJSON.put("userCredentials", credentialMap);
+                outputToServer.write(credentialsJSON.toString() + "\n");
+                outputToServer.flush();
+
+                JSONObject newUserResponseFromServer = new JSONObject(inputFromServer.readLine());
+
+                if(newUserResponseFromServer.get("regResult").equals("success"))
+                {
+                    System.out.println("Вы успешно зарегистрированы.");
+                }
+                else
+                {
+                    System.out.println("Пользователь с таким email уже существует.");
+                }
+
             }
         }
+
         else if(initialCodeResult.get("action").equals("exit"))
         {
             System.out.println("Удачи! :)");
             Thread.sleep(3000);
             System.exit(0);
+        }
         }
     }
 
@@ -106,7 +156,7 @@ public class UserClient
             System.out.println("Некорректный email. Попробуйте еще раз.");
             userEmail = userInput.nextLine();
         }
-        System.out.println("Введите пароль");
+        System.out.println("Введите пароль:");
         String userPassword = userInput.nextLine();
         userCredentials.add(userEmail);
         userCredentials.add(userPassword);
@@ -144,13 +194,50 @@ public class UserClient
             }
         }
     }
+    private static void proposeUserInputTaskId(OutputStreamWriter outputStreamToServer)
+    {
+        while(true)
+        {
+            try
+            {
+                int initialCode = Integer.parseInt(userInput.nextLine());
+                if(initialCode >= 1)
+                {
+                    try
+                    {
+                        outputStreamToServer.write(initialCode + "\n");
+                        outputStreamToServer.flush();
+                    } catch (IOException e)
+                    {
+                        e.printStackTrace();
+                    }
+                    break;
+                }
+                else
+                    {
+                        System.out.println("ID задачи не может быть отрицательным");
+                    }
+            }
+
+            catch (NumberFormatException e)
+            {
+                System.out.println("Пожалуйста, введите корректный ID задачи");
+            }
+        }
+    }
+
 
 
     private static void printFromJSONArray(JSONArray jsonArray)
     {
+        if(jsonArray.length() > 0)
+        {
         for(Object object : jsonArray)
         {
             System.out.println(object.toString());
         }
+        } else System.out.println("У вас нет текущих задач");
     }
 }
+
+
