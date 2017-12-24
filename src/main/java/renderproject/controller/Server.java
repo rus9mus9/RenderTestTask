@@ -231,23 +231,34 @@ public class Server
                             outputToUser.flush();
                             JSONObject userCredentials = new JSONObject(inputFromUser.readLine());
 
-                            String email = userCredentials.getJSONObject("userCredentials").get("email").toString();
-                            String password = userCredentials.getJSONObject("userCredentials").get("password").toString();
 
-                            JSONObject regResult = new JSONObject();
-
-                            if(!userService.isClientExist(email))
+                            if(userCredentials.getJSONObject("verifyResult").get("result").equals("success"))
                             {
-                                userService.createNewUser(new User(email, password));
-                                regResult.put("regResult", "success");
-                            }
-                            else
+                                String email = userCredentials.getJSONObject("userCredentials").get("email").toString();
+                                String password = userCredentials.getJSONObject("userCredentials").get("password").toString();
+
+                                JSONObject regResult = new JSONObject();
+
+                                if(!userService.isClientExist(email))
+                                {
+                                    userService.createNewUser(new User(email, password));
+                                    regResult.put("regResult", "success");
+                                }
+                                else
                                 {
                                     regResult.put("regResult", "userAlreadyExists");
                                 }
 
-                         outputToUser.write(regResult.toString() + "\n");
-                         outputToUser.flush();
+                                outputToUser.write(regResult.toString() + "\n");
+                                outputToUser.flush();
+                            }
+                            else if(userCredentials.getJSONObject("verifyResult").get("result").equals("failed"))
+                            {
+                                JSONObject failed = new JSONObject();
+                                failed.put("regResult", "failed");
+                                outputToUser.write(failed.toString() + "\n");
+                                outputToUser.flush();
+                            }
                         }
                         else
                         {

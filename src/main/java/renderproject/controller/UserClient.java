@@ -103,37 +103,43 @@ public class UserClient
 
         else if(initialCodeResult.get("action").equals("register"))
         {
-            //JSONObject verifyResult = new JSONObject();
+            JSONObject verifyResult = new JSONObject();
+            JSONObject credentialsJSON = new JSONObject();
             System.out.println("Регистрация нового пользователя.");
             List<String> newUserCredentials =  proposeUserInputCredentials();
             System.out.println("Подтвердите пароль:");
             String verifyPassword = userInput.nextLine();
             if(!newUserCredentials.get(1).equals(verifyPassword))
             {
-                System.out.println("Введенные пароли не совпадают.");
-                //verifyResult.put("result", "failed");
+                JSONObject failed = new JSONObject();
+                failed.put("result", "failed");
+                credentialsJSON.put("verifyResult", failed);
             }
             else
             {
-                JSONObject credentialsJSON = new JSONObject();
+                verifyResult.put("result", "success");
                 Map<String, String> credentialMap = new HashMap<>();
                 credentialMap.put("email", newUserCredentials.get(0));
                 credentialMap.put("password", newUserCredentials.get(1));
                 credentialsJSON.put("userCredentials", credentialMap);
-                outputToServer.write(credentialsJSON.toString() + "\n");
-                outputToServer.flush();
+                credentialsJSON.put("verifyResult", verifyResult);
+            }
+            outputToServer.write(credentialsJSON.toString() + "\n");
+            outputToServer.flush();
 
-                JSONObject newUserResponseFromServer = new JSONObject(inputFromServer.readLine());
+            JSONObject newUserResponseFromServer = new JSONObject(inputFromServer.readLine());
 
-                if(newUserResponseFromServer.get("regResult").equals("success"))
-                {
-                    System.out.println("Вы успешно зарегистрированы.");
-                }
-                else
-                {
-                    System.out.println("Пользователь с таким email уже существует.");
-                }
-
+            if(newUserResponseFromServer.get("regResult").equals("success"))
+            {
+                System.out.println("Вы успешно зарегистрированы.");
+            }
+            else if(newUserResponseFromServer.get("regResult").equals("userAlreadyExists"))
+            {
+                System.out.println("Пользователь с таким email уже существует.");
+            }
+            else if(newUserResponseFromServer.get("regResult").equals("failed"))
+            {
+                System.out.println("Введенные пароли не совпадают.");
             }
         }
 
