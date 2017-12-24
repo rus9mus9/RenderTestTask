@@ -29,48 +29,24 @@ public class UserClient
         JSONObject arrayOfInitialCommands = new JSONObject(inputFromServer.readLine());
         printFromJSONArray(arrayOfInitialCommands.getJSONArray("initialCommands"));
 
-        while(true)
-        {
-            try
-            {
-                int initialCode = Integer.parseInt(userInput.nextLine());
-                if(initialCode >= 1 && initialCode <= 3)
-                {
-                    outputToServer.write(initialCode + "\n");
-                    outputToServer.flush();
-                    break;
-                }
-                else
-                    {
-                        System.out.println("Введите код от 1 до 3");
-                    }
-            }
-
-            catch (NumberFormatException e)
-            {
-                System.out.println("Пожалуйста, введите число от 1 до 3");
-            }
-        }
+        proposeUserInputCode(1, 3, outputToServer);
 
         JSONObject initialCodeResult  = new JSONObject(inputFromServer.readLine());
 
         if(initialCodeResult.get("action").equals("login"))
         {
             List<String> credentials = proposeUserInputCredentials();
-
             JSONObject credentialsJSON = new JSONObject();
-
             Map<String, String> credentialMap = new HashMap<>();
             credentialMap.put("email", credentials.get(0));
             credentialMap.put("password", credentials.get(1));
-
-
             credentialsJSON.put("userCredentials", credentialMap);
 
             outputToServer.write(credentialsJSON.toString() + "\n");
             outputToServer.flush();
 
             JSONObject authResultObject = new JSONObject(inputFromServer.readLine());
+
 
             if(authResultObject.get("authorizeResult").equals("user doesn't exit"))
             {
@@ -83,11 +59,22 @@ public class UserClient
             else if(authResultObject.get("authorizeResult").equals("success"))
             {
                 System.out.println("Добро пожаловать!");
+                JSONObject arrayOfLoggedUser = new JSONObject(inputFromServer.readLine());
+                printFromJSONArray(arrayOfLoggedUser.getJSONArray("loggedUserCommands"));
+                proposeUserInputCode(1, 4, outputToServer);
             }
         }
+
         else if(initialCodeResult.get("action").equals("register"))
         {
-
+            System.out.println("Регистрация нового пользователя");
+            List<String> newUserCredentials =  proposeUserInputCredentials();
+            System.out.println("Подтвердите пароль");
+            String verifyPassword = userInput.nextLine();
+            if(!newUserCredentials.get(1).equals(verifyPassword))
+            {
+                System.out.println("Введенные пароли не совпадают. Повторить попытку?");
+            }
         }
         else if(initialCodeResult.get("action").equals("exit"))
         {
@@ -128,7 +115,37 @@ public class UserClient
         return userCredentials;
     }
 
-    private static void proposeUserInputCode(int minCode, int maxCode)
+    private static void proposeUserInputCode(int minCode, int maxCode, OutputStreamWriter outputStreamToServer)
+    {
+        while(true)
+        {
+            try
+            {
+                int initialCode = Integer.parseInt(userInput.nextLine());
+                if(initialCode >= minCode && initialCode <= maxCode)
+                {
+                    try
+                    {
+                        outputStreamToServer.write(initialCode + "\n");
+                        outputStreamToServer.flush();
+                    } catch (IOException e)
+                    {
+                        e.printStackTrace();
+                    }
+                    break;
+                }
+                else
+                {
+                    System.out.printf("Введите код от %d до %d \n", minCode, maxCode);
+                }
+            }
+
+            catch (NumberFormatException e)
+            {
+                System.out.printf("Пожалуйста, введите число от %d до %d \n",minCode, maxCode);
+            }
+        }
+    }
 
 
     private static void printFromJSONArray(JSONArray jsonArray)

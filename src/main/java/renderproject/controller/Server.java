@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.stereotype.Component;
 import renderproject.model.Client;
+import renderproject.model.Task;
 import renderproject.service.client.ClientService;
 import renderproject.service.task.TaskService;
 
@@ -62,6 +63,7 @@ public class Server
     private static JSONObject successCredentialsJSONObject = new JSONObject().put("authorizeResult", "success");
 
     private static JSONObject userDoesntExitJSONObject = new JSONObject().put("authorizeResult", "user doesn't exit");
+
 
     private static JSONObject generateJSONObjectInitialCommands()
     {
@@ -134,9 +136,24 @@ public class Server
 
                                 if(authorizedClient != null)
                                 {
+                                    JSONObject successCredentialsJSONObjectinner = new JSONObject();
+                                    successCredentialsJSONObjectinner.put("authorizeResult", "success?email=" + authorizedClient.getEmail());
+
+                                    //System.out.println(successCredentialsJSONObject.getJSONObject("authorizeResult").put("userEmail", authorizedClient.getEmail()));
                                     outputToUser.write(successCredentialsJSONObject.toString() + "\n");
                                     //outputToUser.write("Добро пожаловать " + authorizedClient.getEmail() + "\n");
                                     outputToUser.flush();
+
+                                    outputToUser.write(loggedUserCommandsJSON.toString() + "\n");
+                                    outputToUser.flush();
+
+                                    codeFromUser = Integer.parseInt(inputFromUser.readLine());
+
+                                    if(codeFromUser == 1)
+                                    {
+                                        Task task = new Task();
+                                        taskService.createTask(task, authorizedClient.getId());
+                                    }
                                 }
                                 else
                                 {
