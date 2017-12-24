@@ -56,9 +56,9 @@ public class UserClient
             {
                 System.out.println("Неверная пара логин/пароль. Повторить попытку?");
             }
-            else if(authResultObject.get("authorizeResult").equals("success"))
+            else if(authResultObject.get("authorizeResult").toString().contains("success"))
             {
-                System.out.println("Добро пожаловать!");
+                System.out.println("Добро пожаловать! " + authResultObject.get("authorizeResult").toString().substring(authResultObject.get("authorizeResult").toString().lastIndexOf("=") + 1));
                 JSONObject arrayOfLoggedUser = new JSONObject(inputFromServer.readLine());
                 printFromJSONArray(arrayOfLoggedUser.getJSONArray("loggedUserCommands"));
                 proposeUserInputCode(1, 4, outputToServer);

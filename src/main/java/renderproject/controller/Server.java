@@ -137,10 +137,11 @@ public class Server
                                 if(authorizedClient != null)
                                 {
                                     JSONObject successCredentialsJSONObjectinner = new JSONObject();
+                                    //successCredentialsJSONObjectinner.put("userEmail", authorizedClient.getEmail());
                                     successCredentialsJSONObjectinner.put("authorizeResult", "success?email=" + authorizedClient.getEmail());
-
                                     //System.out.println(successCredentialsJSONObject.getJSONObject("authorizeResult").put("userEmail", authorizedClient.getEmail()));
-                                    outputToUser.write(successCredentialsJSONObject.toString() + "\n");
+                                    //outputToUser.write(successCredentialsJSONObject.toString() + "\n");
+                                    outputToUser.write(successCredentialsJSONObjectinner.toString() + "\n");
                                     //outputToUser.write("Добро пожаловать " + authorizedClient.getEmail() + "\n");
                                     outputToUser.flush();
 
