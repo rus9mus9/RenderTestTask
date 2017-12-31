@@ -27,7 +27,6 @@
         <hibernate-validator.version>6.0.5.Final</hibernate-validator.version>
         <org.springframework-version>5.0.2.RELEASE</org.springframework-version>
         <postgresql.version>42.1.4</postgresql.version>
-        <spring-security.version>4.2.3.RELEASE</spring-security.version>
         <dbcp-version>1.4</dbcp-version>
     </properties>
 
@@ -63,26 +62,6 @@
             <artifactId>postgresql</artifactId>
             <version>${postgresql.version}</version>
         </dependency>
-
-        <!--security-->
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-web</artifactId>
-            <version>${spring-security.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-config</artifactId>
-            <version>${spring-security.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-taglibs</artifactId>
-            <version>${spring-security.version}</version>
-        </dependency>
-
 
         <dependency>
             <groupId>commons-dbcp</groupId>
